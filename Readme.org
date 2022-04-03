@@ -3,10 +3,11 @@
   It is necessary as of 2022-04-02T23:44:30-07:00. Ideally the need for this program will be very short lived!
   This program was written by following the excellent Koinly documentation at
   https://help.koinly.io/en/articles/3662999-how-to-create-a-custom-csv-file-with-your-data
+  You can see a Koinly template at https://docs.google.com/spreadsheets/d/1dESkilY70aLlo18P3wqXR_PX1svNyAbkYiAk2tBPJng/edit#gid=0
 
-** This program fixes 4 problems in the Nexo CVS export.
-   
-*** Problem 1: Duplicate data fields in Deposits and Withdrawels.
+** This program fixes 3 problems in the Nexo CVS export.
+
+*** Problem 1: Duplicate data fields in Deposits and Withdrawals.
     Here is a data row in a Nexo CVS deposit transaction (edited for readability)
     | Transaction | Type    | Input Currency |  Input Amount | Output Currency | Output Amount |
     |-------------+---------+----------------+---------------+-----------------+---------------+
@@ -30,15 +31,27 @@
     | Transaction | Type     | Input Currency | Input Amount | Output Currency | Output Amount |
     |-------------+----------+----------------+--------------+-----------------+---------------|
     | NXT.......r | Exchange | USDC           | ==> MANUAL   | BNB             |    2.45493262 |
-    Please notice my program puts a "MANUAL" placeholder into the Input Amount
+    Please notice my program puts a "==> MANUAL" placeholder into the 'Input Amount' field. This is to indicate
+    the that you have to look up the input amount on your transactions page in your Nexo web interface on manually
+    enter this value into the CSV file row of the CSV file produced by my program.
+*** Problem 3: Nexo's undocumented use of Central European Time (CET) time zone.
+    Nexo expects time values in UST time. Nexo uses CET time.
+    Here is a data row in a Nexo CVS deposit transaction (edited for readability)
+    | Date / Time         | Transaction | Type    |
+    |---------------------+-------------+---------|
+    | 2022-03-28 18:49:14 | NXT.......M | Deposit |
+    Note that Nexo doesn't indicate the timezone even thought it is using a non standard CET time zone for the 'Date / Time' field.
+    Here's the same data row after processed by my program:
+    | Date / Time               | Transaction | Type    |
+    |---------------------------+-------------+---------|
+    | 2022-03-28 18:49:14+01:00 | NXT.......M | Deposit |
 
-    
 
-
+** Data field mapping from Nexo to Koinify
+   Here are the data fields in the current Nexo CSV format (edited for readability):
+   | Transaction | Type | Currency | Amount | USD Equivalent | Details | Outstanding Loan | Date / Time |
 * The nexo-koinly-cvs Perl program
   #+begin_src perl :tangle nexo-koinly-cvs :shebang #!/usr/bin/env perl
-    # 
-    # See https://docs.google.com/spreadsheets/d/1dESkilY70aLlo18P3wqXR_PX1svNyAbkYiAk2tBPJng/edit#gid=0
     use v5.30.0;
     my $nexo_cvs_file = $ARGV[0] or die "Please supply Nexo CVS file";
     open( my $fh_cvs, '<', $nexo_cvs_file ) or die "$!: Can't find $nexo_cvs_file";
