@@ -14,7 +14,7 @@
     |-------------+---------+----------------+---------------+-----------------+---------------+
     | NXT.......M | Deposit | MATIC          | 1882.25266872 | MATIC           | 1882.25266872 |
 
-    Nexo incorrectly populates the Output Currency and Amount - there is no output in a transaction.
+    Nexo incorrectly populates the Output Currency and Amount. A deposit transaction has no output.
 
     Here's the same data row after processed by my program:
     | Transaction | Type    | Input Currency |  Input Amount | Output Currency | Output Amount |
