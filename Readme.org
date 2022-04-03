@@ -52,10 +52,15 @@
    | Transaction | Type | Currency | Amount | USD Equivalent | Details | Outstanding Loan | Date / Time |
 * The nexo-koinly-cvs Perl program
   #+begin_src perl :tangle nexo-koinly-cvs :shebang #!/usr/bin/env perl
+    # version 0001
     use v5.30.0;
     my $nexo_cvs_file = $ARGV[0] or die "Please supply Nexo CVS file";
     open( my $fh_cvs, '<', $nexo_cvs_file ) or die "$!: Can't find $nexo_cvs_file";
-    # my $header_line = <$fh_cvs>;
+    my $header_line = <$fh_cvs>; # Through away the Nexo column header line
+
+    my $new_header_line = "Date,Sent Amount,Sent Currency,Received Amount,Received Currency,Label,TxHash";
+    say $new_header_line;
+
     # print $header_line;
     while(my $row = <$fh_cvs>) {
 	chomp $row;
@@ -63,7 +68,7 @@
 	next if $row =~ /LockingTermDeposit/;
 	next if $row =~ /UnlockingTermDeposit/;
 	my ($nexo_transaction,$type,$input_currency,$input_amount,$output_currency,$output_amount,$usd_equivalent,$details,$outstanding_loan,$nexo_date_time) = split /,/, $row;
-	my $date_time_with_tz = fix_date($nexo_date_time);
+	my $date_time_with_tz = date_with_timezone($nexo_date_time);
 
 	($input_currency,$input_amount ) = fix_exchange($input_currency, $input_amount) if ($type eq 'Exchange');
 
@@ -81,7 +86,7 @@
 	    $output_amount = '';
 	}
 
-	say "$date_time_with_tz, oa=> $output_amount, oc=> $output_currency, ia => $input_amount, ic => $input_currency, label = $label";
+	say "$date_time_with_tz,$output_amount,$output_currency,$input_amount,$input_currency,$label";
     }
 
     sub fix_exchange {
@@ -91,7 +96,7 @@
 	return($input_currency, $input_amount);
     }
 
-    sub fix_date {
+    sub date_with_timezone {
 	my $nexo_date = shift;
 	return $nexo_date . '+01:00'
     }
