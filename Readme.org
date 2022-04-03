@@ -33,7 +33,7 @@
     |-------------+----------+----------------+--------------+-----------------+---------------|
     | NXT.......r | Exchange | USDC           | => MANUAL    | BNB             |    2.45493262 |
     Please notice my program puts a "=> MANUAL" placeholder into the 'Input Amount' field. This is to indicate
-    the that you have to look up the input amount on your transactions page in your Nexo web interface on manually
+    the that you have to look up the input amount on your transactions page in your Nexo web interface and manually
     enter this value into the CSV file row of the CSV file produced by my program.
 *** Problem 3: Nexo's undocumented use of Central European Time (CET) time zone.
     Nexo expects time values in UST time. Nexo uses CET time.
