@@ -1,0 +1,58 @@
+#!/usr/bin/env perl
+# See https://help.koinly.io/en/articles/3662999-how-to-create-a-custom-csv-file-with-your-data
+# See https://docs.google.com/spreadsheets/d/1dESkilY70aLlo18P3wqXR_PX1svNyAbkYiAk2tBPJng/edit#gid=0
+use v5.30.0;
+my $nexo_cvs_file = $ARGV[0] or die "Please supply Nexo CVS file";
+open( my $fh_cvs, '<', $nexo_cvs_file ) or die "$!: Can't find $nexo_cvs_file";
+# my $header_line = <$fh_cvs>;
+# print $header_line;
+while(my $row = <$fh_cvs>) {
+    chomp $row;
+    my $label;
+    next if $row =~ /LockingTermDeposit/;
+    next if $row =~ /UnlockingTermDeposit/;
+    my ($nexo_transaction,$type,$input_currency,$input_amount,$output_currency,$output_amount,$usd_equivalent,$details,$outstanding_loan,$nexo_date_time) = split /,/, $row;
+    my $date_time_with_tz = fix_date($nexo_date_time);
+
+    ($input_currency,$input_amount ) = fix_exchange($input_currency, $input_amount) if ($type eq 'Exchange');
+
+    if (($type eq 'Deposit') or ($type eq 'Exchange Cashback') ) {
+	$output_currency = '';
+	$output_amount = '';
+    } elsif ($type eq 'Withdrawal') {
+	$input_currency = '';
+	$input_amount = '';
+    }
+
+    if (($type eq 'Interest') or ($type eq 'FixedTermInterest')) {
+	$label = 'Loan Interest';
+	$output_currency = '';
+	$output_amount = '';
+    }
+
+    say "$date_time_with_tz, oa=> $output_amount, oc=> $output_currency, ia => $input_amount, ic => $input_currency, label = $label";
+}
+
+sub fix_exchange {
+    my ( $input_currency, $input_amount ) = @_;
+    $input_currency =~ s/\/\w+//;
+    $input_amount = "MANUAL";
+    return($input_currency, $input_amount);
+}
+
+sub fix_date {
+    my $nexo_date = shift;
+    return $nexo_date . '+01:00'
+}
+
+__END__
+
+Deposit
+Exchange
+Exchange Cashback
+FixedTermInterest
+Interest
+Transaction,Type,Input Currency,Input Amount,Output Currency,Output Amount,USD Equivalent,Details,Outstanding Loan,Date / Time
+TransferIn
+TransferOut
+Withdrawal
