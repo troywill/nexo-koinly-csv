@@ -6,10 +6,10 @@
   https://help.koinly.io/en/articles/3662999-how-to-create-a-custom-csv-file-with-your-data
   You can see a Koinly template at https://docs.google.com/spreadsheets/d/1dESkilY70aLlo18P3wqXR_PX1svNyAbkYiAk2tBPJng/edit#gid=0
 
-** This program fixes 3 problems in the Nexo CVS export.
+** This program fixes 3 problems in the Nexo CSV export.
 
 *** Problem 1: Duplicate data fields in Deposits and Withdrawals.
-    Here is a data row in a Nexo CVS deposit transaction (edited for readability)
+    Here is a data row in a Nexo CSV deposit transaction (edited for readability)
     | Transaction | Type    | Input Currency |  Input Amount | Output Currency | Output Amount |
     |-------------+---------+----------------+---------------+-----------------+---------------+
     | NXT.......M | Deposit | MATIC          | 1882.25266872 | MATIC           | 1882.25266872 |
@@ -23,7 +23,7 @@
 
     This transaction will now load into Koinify because Output Currency and Output Amount are empty.
 *** Problem 2: Improper and incorrect fields in exchange transactions
-    Here is a data row in a Nexo CVS exchange transaction (edited for readability)
+    Here is a data row in a Nexo CSV exchange transaction (edited for readability)
     | Transaction | Type     | Input Currency | Input Amount   | Output Currency | Output Amount |
     |-------------+----------+----------------+----------------+-----------------+---------------+
     | NXT.......r | Exchange | USDC/BNB       | BNB 2.45493262 | BNB             |    2.45493262 |
@@ -37,7 +37,7 @@
     enter this value into the CSV file row of the CSV file produced by my program.
 *** Problem 3: Nexo's undocumented use of Central European Time (CET) time zone.
     Nexo expects time values in UST time. Nexo uses CET time.
-    Here is a data row in a Nexo CVS deposit transaction (edited for readability)
+    Here is a data row in a Nexo CSV deposit transaction (edited for readability)
     | Date / Time         | Transaction | Type    |
     |---------------------+-------------+---------|
     | 2022-03-28 18:49:14 | NXT.......M | Deposit |
@@ -47,22 +47,21 @@
     |---------------------------+-------------+---------|
     | 2022-03-28 18:49:14+01:00 | NXT.......M | Deposit |
 
-
 ** Data field mapping from Nexo to Koinify
    Here are the data fields in the current Nexo CSV format (edited for readability):
    | Transaction | Type | Currency | Amount | USD Equivalent | Details | Outstanding Loan | Date / Time |
-* The nexo-koinly-cvs Perl program
-  #+begin_src perl :tangle nexo-koinly-cvs :shebang #!/usr/bin/env perl
+* The nexo-koinly-csv Perl program
+  #+begin_src perl :tangle nexo-koinly-csv :shebang #!/usr/bin/env perl
     # version 0001
     use v5.30.0;
-    my $nexo_cvs_file = $ARGV[0] or die "Please supply Nexo CVS file";
-    open( my $fh_cvs, '<', $nexo_cvs_file ) or die "$!: Can't find $nexo_cvs_file";
-    my $header_line = <$fh_cvs>; # Through away the Nexo column header line
+    my $nexo_csv_file = $ARGV[0] or die "Please supply Nexo CSV file";
+    open( my $fh_csv, '<', $nexo_csv_file ) or die "$!: Can't find $nexo_csv_file";
+    my $header_line = <$fh_csv>; # Through away the Nexo column header line
 
     my $new_header_line = "Date,Sent Amount,Sent Currency,Received Amount,Received Currency,Label,TxHash";
     say $new_header_line;
 
-    while(my $row = <$fh_cvs>) {
+    while(my $row = <$fh_csv>) {
 	chomp $row;
 	my $label;
 	next if $row =~ /LockingTermDeposit/;
