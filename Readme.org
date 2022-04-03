@@ -62,7 +62,6 @@
     my $new_header_line = "Date,Sent Amount,Sent Currency,Received Amount,Received Currency,Label,TxHash";
     say $new_header_line;
 
-    # print $header_line;
     while(my $row = <$fh_cvs>) {
 	chomp $row;
 	my $label;
