@@ -1,8 +1,8 @@
 * Introduction
-  version 0001
-  This is a utility written in Perl to fix and reformat a Nexo transaction CSV export to a CSV file readable by Koinly.
-  It is necessary as of 2022-04-02T23:44:30-07:00. Ideally the need for this program will be very short lived!
-  This program was written by following the excellent Koinly documentation at
+  + Updated 2022-04-03T00:33:19-07:00
+  + This is a utility written in Perl to fix and reformat a Nexo transaction CSV export to a CSV file readable by Koinly.
+  + It is necessary as of 2022-04-02T23:44:30-07:00. Ideally the need for this program will be very short lived!
+  + This program was written by following the excellent Koinly documentation at
   https://help.koinly.io/en/articles/3662999-how-to-create-a-custom-csv-file-with-your-data
   You can see a Koinly template at https://docs.google.com/spreadsheets/d/1dESkilY70aLlo18P3wqXR_PX1svNyAbkYiAk2tBPJng/edit#gid=0
 
@@ -32,7 +32,7 @@
     | Transaction | Type     | Input Currency | Input Amount | Output Currency | Output Amount |
     |-------------+----------+----------------+--------------+-----------------+---------------|
     | NXT.......r | Exchange | USDC           | => MANUAL    | BNB             |    2.45493262 |
-    Please notice my program puts a "==> MANUAL" placeholder into the 'Input Amount' field. This is to indicate
+    Please notice my program puts a "=> MANUAL" placeholder into the 'Input Amount' field. This is to indicate
     the that you have to look up the input amount on your transactions page in your Nexo web interface on manually
     enter this value into the CSV file row of the CSV file produced by my program.
 *** Problem 3: Nexo's undocumented use of Central European Time (CET) time zone.
