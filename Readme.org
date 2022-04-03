@@ -52,7 +52,7 @@
    | Transaction | Type | Currency | Amount | USD Equivalent | Details | Outstanding Loan | Date / Time |
 * The nexo-koinly-csv Perl program
   #+begin_src perl :tangle nexo-koinly-csv :shebang #!/usr/bin/env perl
-    # version 0001
+    # version 0002
     use v5.30.0;
     my $nexo_csv_file = $ARGV[0] or die "Please supply Nexo CSV file";
     open( my $fh_csv, '<', $nexo_csv_file ) or die "$!: Can't find $nexo_csv_file";
@@ -71,18 +71,17 @@
 
 	($input_currency,$input_amount ) = fix_exchange($input_currency, $input_amount) if ($type eq 'Exchange');
 
-	if (($type eq 'Deposit') or ($type eq 'Exchange Cashback') ) {
-	    $output_currency = '';
-	    $output_amount = '';
+	if (($type eq 'Deposit') or	($type eq 'Exchange Cashback')) {
+	    ($output_currency, $output_amount)  = ('', '');
 	} elsif ($type eq 'Withdrawal') {
-	    $input_currency = '';
-	    $input_amount = '';
-	}
-
-	if (($type eq 'Interest') or ($type eq 'FixedTermInterest')) {
+	    ($input_currency, $input_amount) = ('', '');
+	} elsif (($type eq 'Interest') or ($type eq 'FixedTermInterest')) {
 	    $label = 'Loan Interest';
-	    $output_currency = '';
-	    $output_amount = '';
+	    ($output_currency, $output_amount)  = ('', '');
+	} elsif ($type eq 'TransferIn') {
+	    ($output_currency, $output_amount)  = ('', '');
+	} elsif ($type eq 'TransferOut') {
+	    ($input_currency, $input_amount)  = ('', '');
 	}
 
 	say "$date_time_with_tz,$output_amount,$output_currency,$input_amount,$input_currency,$label";

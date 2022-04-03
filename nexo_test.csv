@@ -1,0 +1,10 @@
+Transaction,Type,Input Currency,Input Amount,Output Currency,Output Amount,USD Equivalent,Details,Outstanding Loan,Date / Time
+N...f,Deposit,MATIC,1882.25266872,MATIC,1882.25266872,$3259.36707098,approved / 0xcf7de1a43e6d0ae9c2ea4058bdca87bdc9cc2b93348e9adadda5e9e1b3dc69f6,$0.00,2022-03-28 15:57:15
+N...E,Deposit,USDC,1000.00000000,USDC,1000,$1000.442,approved / 0xd40bcb5f3e4c037b0963283755ede2781f6163d53f7c8feaaa2d7c3b16d0da34,$0.00,2021-07-02 00:07:31
+N...I,Exchange,USDC/ETH,ETH 5.31763788,ETH,5.31763788,$15822.73,approved / Exchange USD Coin to Ether,$0.00,2022-03-23 22:26:32
+N...k,Exchange Cashback,ETH,0.01274826,ETH,0.01274826,$37.93269633,approved / 0.5% on top of your Exchange transaction,$0.00,2022-03-23 22:26:35
+N...g,FixedTermInterest,NEXO,4.39233344,NEXO,4.39233344,$9.61506826,approved / Term Deposit Interest,$0.00,2022-03-18 07:01:29
+N...E,Interest,ETH,0.00072112,ETH,0.00072112,$2.19,approved / ETH Interest Earned,$0.00,2022-03-24 07:00:06
+N...p,TransferIn,LUNA,50.00000000,LUNA,50,$2328.0924,approved / Transfer from Credit Line Wallet to Savings Wallet,$0.00,2022-01-30 22:12:08
+N...v,TransferOut,LUNA,-50.00000000,LUNA,50,$2328.24535,approved / Transfer from Savings Wallet to Credit Line Wallet,$0.00,2022-01-30 21:47:58
+N...f,Withdrawal,ETH,-5.43424845,ETH,5.43297102,$17046.65092356,approved / ETH withdrawal,$0.00,2022-03-25 05:51:06
