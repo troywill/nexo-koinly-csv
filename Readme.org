@@ -1,5 +1,7 @@
 * Introduction
-  This program was writing by following the excellent Koinly documentation at
+  This is a utility written in Perl to fix and reformat a Nexo transaction CSV export to a CSV file readable by Koinly.
+  It is necessary as of 2022-04-02T23:44:30-07:00. Ideally the need for this program will be very short lived!
+  This program was written by following the excellent Koinly documentation at
   https://help.koinly.io/en/articles/3662999-how-to-create-a-custom-csv-file-with-your-data
 
 ** This program fixes 4 problems in the Nexo CVS export.
@@ -12,13 +14,26 @@
 
     Nexo incorrectly populates the Output Currency and Amount - there is no output in a transaction.
 
-    Here's the data row after processed by my program:
+    Here's the same data row after processed by my program:
     | Transaction | Type    | Input Currency |  Input Amount | Output Currency | Output Amount |
     |-------------+---------+----------------+---------------+-----------------+---------------|
     | NXT.......M | Deposit | MATIC          | 1882.25266872 |                 |               |
 
-    This transaction will now load into 
-*** Problem 2:
+    This transaction will now load into Koinify because Output Currency and Output Amount are empty.
+*** Problem 2: Improper and incorrect fields in exchange transactions
+    Here is a data row in a Nexo CVS exchange transaction (edited for readability)
+    | Transaction | Type     | Input Currency | Input Amount   | Output Currency | Output Amount |
+    |-------------+----------+----------------+----------------+-----------------+---------------+
+    | NXT.......r | Exchange | USDC/BNB       | BNB 2.45493262 | BNB             |    2.45493262 |
+    Nexo garbles the Input Currency field and puts garbage in the input amount.
+    Here's the same data row after processed by my program:
+    | Transaction | Type     | Input Currency | Input Amount | Output Currency | Output Amount |
+    |-------------+----------+----------------+--------------+-----------------+---------------|
+    | NXT.......r | Exchange | USDC           | ==> MANUAL   | BNB             |    2.45493262 |
+    Please notice my program puts a "MANUAL" placeholder into the Input Amount
+
+    
+
 
 * The nexo-koinly-cvs Perl program
   #+begin_src perl :tangle nexo-koinly-cvs :shebang #!/usr/bin/env perl
@@ -59,7 +74,7 @@
     sub fix_exchange {
 	my ( $input_currency, $input_amount ) = @_;
 	$input_currency =~ s/\/\w+//;
-	$input_amount = "MANUAL";
+	$input_amount = "==> MANUAL";
 	return($input_currency, $input_amount);
     }
 
@@ -67,17 +82,4 @@
 	my $nexo_date = shift;
 	return $nexo_date . '+01:00'
     }
-    
-    __END__
-
-    Deposit
-    Exchange
-    Exchange Cashback
-    FixedTermInterest
-    Interest
-    Transaction,Type,Input Currency,Input Amount,Output Currency,Output Amount,USD Equivalent,Details,Outstanding Loan,Date / Time
-    TransferIn
-    TransferOut
-    Withdrawal
-
   #+end_src
