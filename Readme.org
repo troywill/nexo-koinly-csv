@@ -1,4 +1,5 @@
 * Introduction
+  version 0001
   This is a utility written in Perl to fix and reformat a Nexo transaction CSV export to a CSV file readable by Koinly.
   It is necessary as of 2022-04-02T23:44:30-07:00. Ideally the need for this program will be very short lived!
   This program was written by following the excellent Koinly documentation at
@@ -30,7 +31,7 @@
     Here's the same data row after processed by my program:
     | Transaction | Type     | Input Currency | Input Amount | Output Currency | Output Amount |
     |-------------+----------+----------------+--------------+-----------------+---------------|
-    | NXT.......r | Exchange | USDC           | ==> MANUAL   | BNB             |    2.45493262 |
+    | NXT.......r | Exchange | USDC           | => MANUAL    | BNB             |    2.45493262 |
     Please notice my program puts a "==> MANUAL" placeholder into the 'Input Amount' field. This is to indicate
     the that you have to look up the input amount on your transactions page in your Nexo web interface on manually
     enter this value into the CSV file row of the CSV file produced by my program.
@@ -92,7 +93,7 @@
     sub fix_exchange {
 	my ( $input_currency, $input_amount ) = @_;
 	$input_currency =~ s/\/\w+//;
-	$input_amount = "==> MANUAL";
+	$input_amount = "=> MANUAL";
 	return($input_currency, $input_amount);
     }
 
