@@ -1,5 +1,5 @@
 * Introduction
-  + Updated 2022-04-03T00:33:19-07:00
+  + Updated 2022-04-04T14:56:36-07:00
   + This is a utility written in Perl to fix and reformat a Nexo transaction CSV export to a CSV file readable by Koinly.
   + It is necessary as of 2022-04-02T23:44:30-07:00. Ideally the need for this program will be very short lived!
   + This program was written by following the excellent Koinly documentation at
@@ -31,8 +31,8 @@
     Here's the same data row after processed by my program:
     | Transaction | Type     | Input Currency | Input Amount | Output Currency | Output Amount |
     |-------------+----------+----------------+--------------+-----------------+---------------|
-    | NXT.......r | Exchange | USDC           | => MANUAL    | BNB             |    2.45493262 |
-    Please notice my program puts a "=> MANUAL" placeholder into the 'Input Amount' field. This is to indicate
+    | NXT.......r | Exchange | USDC           | ???          | BNB             |    2.45493262 |
+    Please notice my program puts a "???" placeholder into the 'Input Amount' field. This is to indicate
     the that you have to look up the input amount on your transactions page in your Nexo web interface and manually
     enter this value into the CSV file row of the CSV file produced by my program.
 *** Problem 3: Nexo's undocumented use of Central European Time (CET) time zone.
@@ -52,13 +52,18 @@
    | Transaction | Type | Currency | Amount | USD Equivalent | Details | Outstanding Loan | Date / Time |
 * The nexo-koinly-csv Perl program
   #+begin_src perl :tangle nexo-koinly-csv :shebang #!/usr/bin/env perl
-    # version 0002
+    # version 0003
+    # updated 2022-04-04T14:56:11-07:00
     use v5.30.0;
     my $nexo_csv_file = $ARGV[0] or die "Please supply Nexo CSV file";
     open( my $fh_csv, '<', $nexo_csv_file ) or die "$!: Can't find $nexo_csv_file";
+    open( my $fh_warnings, '>', 'WARNINGS' ) or warn "$!: Unable to open WARNINGS file";
+
     my $header_line = <$fh_csv>; # Through away the Nexo column header line
 
-    my $new_header_line = "Date,Sent Amount,Sent Currency,Received Amount,Received Currency,Label,TxHash";
+    my $new_header_line = "Date,Sent Amount,Sent Currency,Received Amount,Received Currency,Label,TxHash,Description,TxHash,TxNexo,Type";
+    # say "$date_time_with_tz,$output_amount,$output_currency,$input_amount,$input_currency,$label,$description,$TxHash";
+
     say $new_header_line;
 
     while(my $row = <$fh_csv>) {
@@ -67,6 +72,8 @@
 	next if $row =~ /LockingTermDeposit/;
 	next if $row =~ /UnlockingTermDeposit/;
 	my ($nexo_transaction,$type,$input_currency,$input_amount,$output_currency,$output_amount,$usd_equivalent,$details,$outstanding_loan,$nexo_date_time) = split /,/, $row;
+	my ($description, $tx_hash);
+	my ($description,$tx_hash) = get_description($type, $details, $nexo_transaction);
 	my $date_time_with_tz = date_with_timezone($nexo_date_time);
 
 	($input_currency,$input_amount ) = fix_exchange($input_currency, $input_amount) if ($type eq 'Exchange');
@@ -83,19 +90,39 @@
 	} elsif ($type eq 'TransferOut') {
 	    ($input_currency, $input_amount)  = ('', '');
 	}
-
-	say "$date_time_with_tz,$output_amount,$output_currency,$input_amount,$input_currency,$label";
+	say "$date_time_with_tz,$output_amount,$output_currency,$input_amount,$input_currency,$label,$tx_hash,$description,$nexo_transaction,$type";
     }
 
     sub fix_exchange {
 	my ( $input_currency, $input_amount ) = @_;
 	$input_currency =~ s/\/\w+//;
-	$input_amount = "=> MANUAL";
+	$input_amount = '???';
 	return($input_currency, $input_amount);
     }
 
     sub date_with_timezone {
 	my $nexo_date = shift;
 	return $nexo_date . '+01:00'
+    }
+
+    sub get_description {
+	my ($type, $details, $nexo_transaction) = @_;
+	my $tx_hash = '';
+	# approved / 
+	my $description = $details;
+	$description =~ s/(^approved \/ )//;
+	if ($1 ne 'approved / ') {
+	    warn "warning: not approved";
+	    say $fh_warnings "$nexo_transaction not approved";
+	}
+	if ($type eq 'Deposit') {
+	    unless ($description =~ /(\s)/) {
+		if (length($description) > 16) {
+		    $tx_hash = $description;
+		    $description = '';
+		}
+	    }
+	}
+	return ($description,$tx_hash);
     }
   #+end_src
