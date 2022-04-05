@@ -1,12 +1,25 @@
 #!/usr/bin/env perl
-# version 0003
-# updated 2022-04-04T14:56:11-07:00
+# version 005
+# updated 2022-04-04T21:07:35-07:00
 use v5.30.0;
 my $nexo_csv_file = $ARGV[0] or die "Please supply Nexo CSV file";
 open( my $fh_csv, '<', $nexo_csv_file ) or die "$!: Can't find $nexo_csv_file";
 open( my $fh_warnings, '>', 'WARNINGS' ) or warn "$!: Unable to open WARNINGS file";
+open( my $fh_exchanges_wrong_inputs, '>', 'EXCH.MIS' ) or warn "$!: Unable to open EXCH.MIS for output";
 
-my $header_line = <$fh_csv>; # Through away the Nexo column header line
+my $USE_EXCHANGE = 0;
+my @exchange_transactions = ();
+if ($ARGV[1] eq 'EXCHANGES') {
+    open( my $fh_exchanges_correct_inputs, '<', 'EXCHANGES' ) or die "$!: I was unable to open EXCHANGES file with correct input amounts";
+    $USE_EXCHANGE = 1;
+    while (<$fh_exchanges_correct_inputs>) {
+	chomp;
+	push @exchange_transactions, $_;
+    }
+    close($fh_exchanges_correct_inputs) or warn "$!: Unable to close file";
+}
+
+my $header_line = <$fh_csv>; # Throw away the Nexo column header line
 
 my $new_header_line = "Date,Sent Amount,Sent Currency,Received Amount,Received Currency,Label,TxHash,Description,TxHash,TxNexo,Type";
 # say "$date_time_with_tz,$output_amount,$output_currency,$input_amount,$input_currency,$label,$description,$TxHash";
@@ -18,12 +31,17 @@ while(my $row = <$fh_csv>) {
     my $label;
     next if $row =~ /LockingTermDeposit/;
     next if $row =~ /UnlockingTermDeposit/;
-    my ($nexo_transaction,$type,$input_currency,$input_amount,$output_currency,$output_amount,$usd_equivalent,$details,$outstanding_loan,$nexo_date_time) = split /,/, $row;
-    my ($description, $tx_hash);
-    my ($description,$tx_hash) = get_description($type, $details, $nexo_transaction);
-    my $date_time_with_tz = date_with_timezone($nexo_date_time);
+    my ($nexo_transaction_id,$type,$input_currency,$input_amount,$output_currency,$output_amount,$usd_equivalent,$details,$outstanding_loan,$nexo_date_time) = split /,/, $row;
 
-    ($input_currency,$input_amount ) = fix_exchange($input_currency, $input_amount) if ($type eq 'Exchange');
+    # Map Nexo names to Koinly names
+    my $sent_amount       = $output_amount;
+    my $sent_currency     = $output_currency;
+    my $received_amount   = $input_amount;
+    my $received_currency = $input_currency;
+
+    my ($description, $tx_hash);
+    my ($description,$tx_hash) = get_description($type, $details, $nexo_transaction_id);
+    my $date_time_with_tz = date_with_timezone($nexo_date_time);
 
     if (($type eq 'Deposit') or	($type eq 'Exchange Cashback')) {
 	($output_currency, $output_amount)  = ('', '');
@@ -37,15 +55,45 @@ while(my $row = <$fh_csv>) {
     } elsif ($type eq 'TransferOut') {
 	($input_currency, $input_amount)  = ('', '');
     }
-    say "$date_time_with_tz,$output_amount,$output_currency,$input_amount,$input_currency,$label,$tx_hash,$description,$nexo_transaction,$type";
+    if ( $type eq 'Exchange' ) {
+	($sent_amount,$sent_currency,$received_amount,$received_currency) = fix_exchange_transaction($input_currency,$input_amount,$output_currency,$output_amount);
+	say $fh_exchanges_wrong_inputs "$nexo_transaction_id: Sent ? $sent_currency received $received_amount $received_currency on $date_time_with_tz";
+	if ($USE_EXCHANGE) {
+	    $input_amount = get_sent_value_from_exchanges_file($nexo_transaction_id);
+	}
+    }
+    say "$date_time_with_tz,$sent_amount,$sent_currency,$received_amount,$received_currency,$label,$tx_hash,$description,$nexo_transaction_id,$type";
 }
 
-sub fix_exchange {
-    my ( $input_currency, $input_amount ) = @_;
-    $input_currency =~ s/\/\w+//;
-    $input_amount = '???';
-    return($input_currency, $input_amount);
+sub fix_exchange_transaction {
+    # NXTyuZmuWxgW2: Sent 15,999.079254 USDC received 5.31763788 ETH on 2022-03-23 22:26:32+01:00
+    # NXTyuZmuWxgW2,Exchange,USDC/ETH,ETH 5.31763788,ETH,5.31763788,$15822.73,approved / Exchange USD Coin to Ether,$0.00,2022-03-23 22:26:32
+    my ($input_currency,$input_amount,$output_currency,$output_amount) = @_;
+    my ($sent_amount,$sent_currency,$received_amount,$received_currency);
+    $sent_amount = $input_amount; # it's garabage as of 2022-04-04T19:56:12-07:00, need to hand edit sent amount
+    $sent_amount = '?';
+    $sent_currency = $input_currency; # jumbled up, e.g. 'USDC/ETH'
+    $sent_currency =~ s/\/\w+//; # fix the jumbled value, e.g. 'USDC/ETH' => 'USDC'
+    $received_amount = $output_amount; # OK data from Nexo 2022-04-04
+    $received_currency = $output_currency; # OK data from Nexo 2022-04-04
+    return ($sent_amount,$sent_currency,$received_amount,$received_currency);
 }
+
+sub get_sent_value_from_exchanges_file {
+    my ($nexo_transaction_id, $input_amount) = @_;
+    foreach my $transaction (@exchange_transactions) {
+	$transaction =~ s/\,//g;
+	if ($transaction =~ /$nexo_transaction_id/) {
+	    # $transaction =~ /exchanged\s+([+-]?([0-9]+\.?[0-9]*|\.[0-9]+))/;
+	    if ($transaction =~ /Sent\s+(\d+\.?\d+)\s+/) {
+		$input_amount = $1;
+		return $input_amount;
+	    } else {
+		return $input_amount;
+	    }
+	}
+    }
+}    
 
 sub date_with_timezone {
     my $nexo_date = shift;
@@ -53,14 +101,14 @@ sub date_with_timezone {
 }
 
 sub get_description {
-    my ($type, $details, $nexo_transaction) = @_;
+    my ($type, $details, $nexo_transaction_id) = @_;
     my $tx_hash = '';
     # approved / 
     my $description = $details;
     $description =~ s/(^approved \/ )//;
     if ($1 ne 'approved / ') {
 	warn "warning: not approved";
-	say $fh_warnings "$nexo_transaction not approved";
+	say $fh_warnings "$nexo_transaction_id not approved";
     }
     if ($type eq 'Deposit') {
 	unless ($description =~ /(\s)/) {
