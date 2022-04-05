@@ -13,7 +13,6 @@
      
 * How to use nexo-koinly-csv ( with currency exchange transactions )
 
-* How to use nexo-koinly-csv
   1. Download nexo-koinly-csv
   2. Download your Nexo CSV export file from https://platform.nexo.io/transactions
   3. Rename or copy the downloaded Nexo CSV export file, e.g.
