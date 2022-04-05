@@ -1,5 +1,5 @@
 * How to use nexo-koinly-csv ( with no currency exchange transactions )
-  0. version 006, updated 2022-04-04T22:44:24-07:00
+  0. version 007, updated 2022-04-04T23:10:29-07:00
   1. Download nexo-koinly-csv, see https://github.com/troywill/nexo-koinly-csv
   2. Download your Nexo CSV export file from https://platform.nexo.io/transactions
      It will be named nexo_transactions.csv.

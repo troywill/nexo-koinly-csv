@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
-# version 006
-# updated 2022-04-04T22:44:24-07:00
+# version 007
+# updated 2022-04-04T23:10:29-07:00
 use v5.30.0;
 my $nexo_csv_file = $ARGV[0] or die "Please supply Nexo CSV file";
 open( my $fh_csv, '<', $nexo_csv_file ) or die "$!: Can't find $nexo_csv_file";
@@ -29,8 +29,12 @@ say $new_header_line;
 while(my $row = <$fh_csv>) {
     chomp $row;
     my $label;
+
     next if $row =~ /LockingTermDeposit/;
     next if $row =~ /UnlockingTermDeposit/;
+    next if $row =~ /TransferIn/;
+    next if $row =~ /TransferOut/;
+
     my ($nexo_transaction_id,$type,$input_currency,$input_amount,$output_currency,$output_amount,$usd_equivalent,$details,$outstanding_loan,$nexo_date_time) = split /,/, $row;
 
     # Map Nexo names to Koinly names
@@ -44,16 +48,16 @@ while(my $row = <$fh_csv>) {
     my $date_time_with_tz = date_with_timezone($nexo_date_time);
 
     if (($type eq 'Deposit') or	($type eq 'Exchange Cashback')) {
-	($output_currency, $output_amount)  = ('', '');
+	($sent_amount, $sent_currency)  = ('', '');
     } elsif ($type eq 'Withdrawal') {
-	($input_currency, $input_amount) = ('', '');
+	($received_currency, $received_amount) = ('', '');
     } elsif (($type eq 'Interest') or ($type eq 'FixedTermInterest')) {
 	$label = 'Loan Interest';
-	($output_currency, $output_amount)  = ('', '');
+	($sent_amount, $sent_currency)  = ('', '');
     } elsif ($type eq 'TransferIn') {
-	($output_currency, $output_amount)  = ('', '');
+	# ($output_currency, $output_amount)  = ('', '');
     } elsif ($type eq 'TransferOut') {
-	($input_currency, $input_amount)  = ('', '');
+	# ($input_currency, $input_amount)  = ('', '');
     }
     if ( $type eq 'Exchange' ) {
 	($sent_amount,$sent_currency,$received_amount,$received_currency) = fix_exchange_transaction($input_currency,$input_amount,$output_currency,$output_amount);
