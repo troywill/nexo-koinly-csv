@@ -1,20 +1,21 @@
 * How to use nexo-koinly-csv ( with no currency exchange transactions )
   0. version 007, updated 2022-04-04T23:10:29-07:00
-  1. Download nexo-koinly-csv, see https://github.com/troywill/nexo-koinly-csv
+  1. Download nexo-koinly-csv from https://github.com/troywill/nexo-koinly-csv
   2. Download your Nexo CSV export file from https://platform.nexo.io/transactions
      It will be named nexo_transactions.csv.
   3. Rename or copy the downloaded Nexo CSV export file, e.g.
   #+begin_src shell
-    $ copy nexo_transactions.csv nexo_transactions_2022-04-04.csv
+    $ cp nexo_transactions.csv nexo_transactions_2022-04-04.csv
   #+end_src
   4. In a shell, run nexo-koinly-csv taking your CSV file as an argument. Redirect output to your filename of choice, e.g.
   #+begin_src shell
     $ perl nexo-koinly-csv nexo_transactions_2022-04-04.csv > nexo_export_220404.csv
   #+end_src
-  5. Import nexo_export_220404.csv into Koinly using
+  5. Import nexo_export_220404.csv into Koinly starting from https://app.koinly.io/p/wallets 
      
-* How to use nexo-koinly-csv ( with currency exchange transactions )
+* How to use nexo-koinly-csv with currency exchange transactions
 
+  0. Nexo has garbage data in the amount of sent currency in exchange transactions. You must enter the sent currency amount by hand using, gathering the amounts from https://platform.nexo.io/transactions.
   1. Download nexo-koinly-csv
   2. Download your Nexo CSV export file from https://platform.nexo.io/transactions
   3. Rename or copy the downloaded Nexo CSV export file, e.g.
@@ -28,7 +29,10 @@
   5. Now you must edit by hand a file that nexo-koinly-csv created in the previous step.
      + The Nexo CSV export has bad data for the sent currency amount
   6. Copy EXCH.MIS to a file name EXCHANGES
-     + The content of EXCHANGES will look like this:
+     #+begin_src shell
+       $ cp EXCH.MIS EXCHANGES
+     #+end_src
+     + The content of EXCH.MIS was written by nexo-koinly-csv in step 4.
        #+begin_src shell
 	 NXTy.......W2: Sent ? USDC received 5.31763788 ETH on 2022-03-23 22:26:32+01:00
 	 NXT2.......Sr: Sent ? UST received 15919.48184483 USDC on 2022-03-23 22:25:06+01:00
@@ -46,9 +50,11 @@
 	 NXTx.......cr: Sent 1,003.816994 USDC received 2.45493262 BNB on 2022-03-dd 22:04:32+01:00
 	 NXTs.......X7: Sent 1,000.00000000 UST received 998.82288 USDC on 2022-03-dd 21:57:00+01:00
        #+end_src
+     + It should be apparent that you replace the ? with the correct sent currency amount.
      + It is OK to leave commas in the number but don't change any of the rest for the line.
   8. Now run nexo-koinly-csv a second time with EXCHANGES as the second arguement, e.g.
   #+begin_src shell
     $ perl nexo-koinly-csv nexo_transactions_2022-04-04.csv EXCHANGES > nexo_export_220404.csv
   #+end_src
-  nexo_export_220404.csv should now have proper values for sent currency amounts because you hand edited them in the EXCHANGES file, and nexo-koinly-csv read them from the exchanges file.
+  nexo_export_220404.csv should now have proper values for sent currency amounts.
+
