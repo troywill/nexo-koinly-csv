@@ -1,17 +1,17 @@
 * The nexo-koinly-csv Perl program
   #+begin_src perl :tangle nexo-koinly-csv :shebang #!/usr/bin/env perl
-    # version 007
-    # updated 2022-04-04T23:10:29-07:00
+    # version 0.10
+    # updated 2022-04-05T13:13:14-07:00
     use v5.30.0;
     my $nexo_csv_file = $ARGV[0] or die "Please supply Nexo CSV file";
     open( my $fh_csv, '<', $nexo_csv_file ) or die "$!: Can't find $nexo_csv_file";
     open( my $fh_warnings, '>', 'WARNINGS' ) or warn "$!: Unable to open WARNINGS file";
-    open( my $fh_exchanges_wrong_inputs, '>', 'EXCH.MIS' ) or warn "$!: Unable to open EXCH.MIS for output";
+    open( my $fh_exchanges_wrong_inputs, '>', 'EXCH.TXT' ) or warn "$!: Unable to open EXCH.TXT for output";
 
     my $USE_EXCHANGE = 0;
     my @exchange_transactions = ();
-    if ($ARGV[1] eq 'EXCHANGES') {
-	open( my $fh_exchanges_correct_inputs, '<', 'EXCHANGES' ) or die "$!: I was unable to open EXCHANGES file with correct input amounts";
+    if ($ARGV[1] eq 'EXCHANGES.TXT') {
+	open( my $fh_exchanges_correct_inputs, '<', 'EXCHANGES.TXT' ) or die "$!: I was unable to open EXCHANGES.TXT file with correct input amounts";
 	$USE_EXCHANGE = 1;
 	while (<$fh_exchanges_correct_inputs>) {
 	    chomp;
@@ -62,9 +62,9 @@
 	}
 	if ( $type eq 'Exchange' ) {
 	    ($sent_amount,$sent_currency,$received_amount,$received_currency) = fix_exchange_transaction($input_currency,$input_amount,$output_currency,$output_amount);
-	    say $fh_exchanges_wrong_inputs "$nexo_transaction_id: Sent ? $sent_currency received $received_amount $received_currency on $date_time_with_tz";
+	    say $fh_exchanges_wrong_inputs "$nexo_transaction_id: Sent  ?  $sent_currency received $received_amount $received_currency on $date_time_with_tz";
 	    if ($USE_EXCHANGE) {
-		$input_amount = get_sent_value_from_exchanges_file($nexo_transaction_id);
+		$sent_amount = get_sent_value_from_exchanges_file($nexo_transaction_id);
 	    }
 	}
 	say "$date_time_with_tz,$sent_amount,$sent_currency,$received_amount,$received_currency,$label,$tx_hash,$description,$nexo_transaction_id,$type";
@@ -76,7 +76,7 @@
 	my ($input_currency,$input_amount,$output_currency,$output_amount) = @_;
 	my ($sent_amount,$sent_currency,$received_amount,$received_currency);
 	$sent_amount = $input_amount; # it's garabage as of 2022-04-04T19:56:12-07:00, need to hand edit sent amount
-	$sent_amount = '?';
+	$sent_amount = ' ? ';
 	$sent_currency = $input_currency; # jumbled up, e.g. 'USDC/ETH'
 	$sent_currency =~ s/\/\w+//; # fix the jumbled value, e.g. 'USDC/ETH' => 'USDC'
 	$received_amount = $output_amount; # OK data from Nexo 2022-04-04
