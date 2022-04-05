@@ -1,0 +1,7 @@
+* How to use nexo-koinly-csv
+  1. download nexo-koinly-csv
+  2. download your Nexo CSV export file
+* Usage with no exchange tran
+
+     
+  
