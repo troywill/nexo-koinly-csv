@@ -1,5 +1,6 @@
 * Introduction
   + Updated 2022-04-04T14:56:36-07:00
+  + Usage page for nexo-koinly-csv at https://github.com/troywill/nexo-koinly-csv/blob/main/USAGE.org
   + This is a utility written in Perl to fix and reformat a Nexo transaction CSV export to a CSV file readable by Koinly.
   + It is necessary as of 2022-04-02T23:44:30-07:00. Ideally the need for this program will be very short lived!
   + This program was written by following the excellent Koinly documentation at
