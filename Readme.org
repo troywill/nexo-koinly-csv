@@ -1,96 +1,62 @@
 * Introduction
-  + Updated 2022-04-04T14:56:36-07:00
+  + Note: On 2022-04-08 Nexo fixed their export to give correct values for exchange transactions
+  + Updated 2022-04-08T17:23:24-07:00
   + Usage page for nexo-koinly-csv at https://github.com/troywill/nexo-koinly-csv/blob/main/USAGE.org
   + This is a utility written in Perl to fix and reformat a Nexo transaction CSV export to a CSV file readable by Koinly.
-  + It is necessary as of 2022-04-02T23:44:30-07:00. Ideally the need for this program will be very short lived!
+  + Ideally the need for this program will be very short lived!
   + This program was written by following the excellent Koinly documentation at
   https://help.koinly.io/en/articles/3662999-how-to-create-a-custom-csv-file-with-your-data
   You can see a Koinly template at https://docs.google.com/spreadsheets/d/1dESkilY70aLlo18P3wqXR_PX1svNyAbkYiAk2tBPJng/edit#gid=0
 
-** This program fixes 3 problems in the Nexo CSV export.
-
-*** Problem 1: Duplicate data fields in Deposits and Withdrawals.
-    Here is a data row in a Nexo CSV deposit transaction (edited for readability)
-    | Transaction | Type    | Input Currency |  Input Amount | Output Currency | Output Amount |
-    |-------------+---------+----------------+---------------+-----------------+---------------+
-    | NXT.......M | Deposit | MATIC          | 1882.25266872 | MATIC           | 1882.25266872 |
-
-    Nexo incorrectly populates the Output Currency and Amount. A deposit transaction has no output.
-
-    Here's the same data row after processed by my program:
-    | Transaction | Type    | Input Currency |  Input Amount | Output Currency | Output Amount |
-    |-------------+---------+----------------+---------------+-----------------+---------------|
-    | NXT.......M | Deposit | MATIC          | 1882.25266872 |                 |               |
-
-    This transaction will now load into Koinify because Output Currency and Output Amount are empty.
-*** Problem 2: Improper and incorrect fields in exchange transactions
-    Here is a data row in a Nexo CSV exchange transaction (edited for readability)
-    | Transaction | Type     | Input Currency | Input Amount   | Output Currency | Output Amount |
-    |-------------+----------+----------------+----------------+-----------------+---------------+
-    | NXT.......r | Exchange | USDC/BNB       | BNB 2.45493262 | BNB             |    2.45493262 |
-    Nexo garbles the Input Currency field and puts garbage in the input amount.
-    Here's the same data row after processed by my program:
-    | Transaction | Type     | Input Currency | Input Amount | Output Currency | Output Amount |
-    |-------------+----------+----------------+--------------+-----------------+---------------|
-    | NXT.......r | Exchange | USDC           | ?            | BNB             |    2.45493262 |
-    Please notice my program puts a '?' placeholder into the 'Input Amount' field. This is to indicate
-    the that you have to look up the input amount on your transactions page in your Nexo web interface and manually
-    enter this value into the CSV file row of the CSV file produced by my program.
-*** Problem 3: Nexo's undocumented use of Central European Time (CET) time zone.
-    Nexo expects time values in UST time. Nexo uses CET time.
-    Here is a data row in a Nexo CSV deposit transaction (edited for readability)
-    | Date / Time         | Transaction | Type    |
-    |---------------------+-------------+---------|
-    | 2022-03-28 18:49:14 | NXT.......M | Deposit |
-    Note that Nexo doesn't indicate the timezone even thought it is using a non standard CET time zone for the 'Date / Time' field.
-    Here's the same data row after processed by my program:
-    | Date / Time               | Transaction | Type    |
-    |---------------------------+-------------+---------|
-    | 2022-03-28 18:49:14+01:00 | NXT.......M | Deposit |
-
-** Data field mapping from Nexo to Koinify
-   Here are the data fields in the current Nexo CSV format (edited for readability):
-   | Transaction | Type | Currency | Amount | USD Equivalent | Details | Outstanding Loan | Date / Time |
-
 * The nexo-koinly-csv Perl program
   #+begin_src perl :tangle nexo-koinly-csv :shebang #!/usr/bin/env perl
-    # version 0.10
-    # updated 2022-04-05T13:13:14-07:00
+    # version 0.13
+    # updated 2022-04-08T17:23:24-07:00
+    # works with Nexo CSV exports after 2022-04-07
     use v5.30.0;
+
     my $nexo_csv_file = $ARGV[0] or die "Please supply Nexo CSV file";
     open( my $fh_csv, '<', $nexo_csv_file ) or die "$!: Can't find $nexo_csv_file";
-    open( my $fh_warnings, '>', 'WARNINGS' ) or warn "$!: Unable to open WARNINGS file";
-    open( my $fh_exchanges_wrong_inputs, '>', 'EXCH.TXT' ) or warn "$!: Unable to open EXCH.TXT for output";
-
-    my $USE_EXCHANGE = 0;
-    my @exchange_transactions = ();
-    if ($ARGV[1] eq 'EXCHANGES.TXT') {
-	open( my $fh_exchanges_correct_inputs, '<', 'EXCHANGES.TXT' ) or die "$!: I was unable to open EXCHANGES.TXT file with correct input amounts";
-	$USE_EXCHANGE = 1;
-	while (<$fh_exchanges_correct_inputs>) {
-	    chomp;
-	    push @exchange_transactions, $_;
-	}
-	close($fh_exchanges_correct_inputs) or warn "$!: Unable to close file";
-    }
+    open( my $fh_warnings, '>', 'WARN.TXT' ) or warn "$!: Unable to open WARN.TXT file";
+    open( my $fh_skips, '>', 'SKIP.TXT' ) or warn "$!: Unable to open SKIP.TXT file";
 
     my $header_line = <$fh_csv>; # Throw away the Nexo column header line
 
-    my $new_header_line = "Date,Sent Amount,Sent Currency,Received Amount,Received Currency,Label,TxHash,Description,NexoID,Type";
-    # say "$date_time_with_tz,$output_amount,$output_currency,$input_amount,$input_currency,$label,$description,$TxHash";
+    # say "$date_time_with_tz,$output_amount,$output_currency,$input_amount,$input_currency,$label,$description,$TxHash"; # <= These columns recognized by Koinly
+    # my $new_header_line = "Date,Sent Amount,Sent Currency,Received Amount,Received Currency,Label,TxHash,Description,NexoID,Type"; # BEFORE 2022-04-05T21:36:22-07:00
+    my $new_header_line = "Date,NexoID,Type,Sent Amount,Sent Currency,Received Amount,Received Currency,Label,Description,TxHash"; # AFTER 2022-04-05T21:36:22-07:00
 
     say $new_header_line;
 
     while(my $row = <$fh_csv>) {
-	chomp $row;
+	chomp($row);
+
+	my ($description, $tx_hash);
+
 	my $label;
 
-	next if $row =~ /LockingTermDeposit/;
-	next if $row =~ /UnlockingTermDeposit/;
-	next if $row =~ /TransferIn/;
-	next if $row =~ /TransferOut/;
-
 	my ($nexo_transaction_id,$type,$input_currency,$input_amount,$output_currency,$output_amount,$usd_equivalent,$details,$outstanding_loan,$nexo_date_time) = split /,/, $row;
+
+	# next if $details =~/^rejected/;
+	if ( $details =~/^\"rejected/ ) {
+	    say "REJECTED";
+	    exit;
+	}	
+
+	if ( $type eq 'LockingTermDeposit') { say $fh_skips $row; next }
+	if ( $type eq 'UnlockingTermDeposit' )  { say $fh_skips $row; next }
+	if ( $type eq 'TransferIn' )  { say $fh_skips $row; next }
+	if ( $type eq 'TransferOut' )  { say $fh_skips $row; next }
+
+	#  Skip over the 4 loan related transaction
+	if ( $type eq 'WithdrawalCredit' ) { say $fh_skips $row; next }; # You get a loan 
+	if ( $type eq 'Liquidation' )      { say $fh_skips $row; next }  # Loan has ended
+	if ( $type eq 'Repayment' ) {        
+	    if ( $type eq 'Deposit' && $details =~ /Credit Granting Top Up/ ) {
+		say $fh_skips $row; # You Repaid the loan
+		next
+	    }
+	}
 
 	# Map Nexo names to Koinly names
 	my $sent_amount       = $output_amount;
@@ -98,7 +64,6 @@
 	my $received_amount   = $input_amount;
 	my $received_currency = $input_currency;
 
-	my ($description, $tx_hash);
 	my ($description,$tx_hash) = get_description($type, $details, $nexo_transaction_id);
 	my $date_time_with_tz = date_with_timezone($nexo_date_time);
 
@@ -113,46 +78,76 @@
 	    # ($output_currency, $output_amount)  = ('', '');
 	} elsif ($type eq 'TransferOut') {
 	    # ($input_currency, $input_amount)  = ('', '');
+	} elsif ( $type eq 'Exchange' ) {
+	    ($sent_amount,$sent_currency,$received_amount,$received_currency) = (abs($input_amount),$input_currency,$output_amount,$output_currency);
+	    # say STDERR "ic: $input_currency, ia: $input_amount, oc: $output_currency, oa: $output_amount";
+	    # say STDERR "sa: $sent_amount, sc: $sent_currency, ra: $received_amount, rc: $received_currency";
+	} elsif ( $type eq 'ExchangeToWithdraw' ) {
+	    ($sent_amount,$sent_currency,$received_amount,$received_currency) = exchange_to_withdraw_transaction ($input_currency,$input_amount,$output_currency,$output_amount);
+	} elsif ( $type eq 'WithdrawExchanged' ) {
+	    ($sent_amount,$sent_currency,$received_amount,$received_currency) = withdraw_exchanged ($input_currency,$input_amount,$output_currency,$output_amount);
+	} elsif ( $type eq 'DepositToExchange' ) {
+	    ($sent_amount,$sent_currency,$received_amount,$received_currency) = deposit_to_exchange_transaction ($input_currency,$input_amount,$output_currency,$output_amount);
+	} elsif ( $type eq 'ExchangeDepositedOn') {
+	    ($sent_amount,$sent_currency,$received_amount,$received_currency) = exchange_deposited_on_transaction ($input_currency,$input_amount,$output_currency,$output_amount);
+	} else {
+	    say $fh_warnings "$nexo_transaction_id: unknown type $type";
 	}
-	if ( $type eq 'Exchange' ) {
-	    ($sent_amount,$sent_currency,$received_amount,$received_currency) = fix_exchange_transaction($input_currency,$input_amount,$output_currency,$output_amount);
-	    say $fh_exchanges_wrong_inputs "$nexo_transaction_id: Sent  ?  $sent_currency received $received_amount $received_currency on $date_time_with_tz";
-	    if ($USE_EXCHANGE) {
-		$sent_amount = get_sent_value_from_exchanges_file($nexo_transaction_id);
-	    }
-	}
-	say "$date_time_with_tz,$sent_amount,$sent_currency,$received_amount,$received_currency,$label,$tx_hash,$description,$nexo_transaction_id,$type";
+
+	say "$date_time_with_tz,$nexo_transaction_id,$type,$sent_amount,$sent_currency,$received_amount,$received_currency,$label,$description,$tx_hash"; # AFTER 2022-04-05T21:36:22-07:00
+
     }
 
-    sub fix_exchange_transaction {
-	# NXTyuZmuWxgW2: Sent 15,999.079254 USDC received 5.31763788 ETH on 2022-03-23 22:26:32+01:00
-	# NXTyuZmuWxgW2,Exchange,USDC/ETH,ETH 5.31763788,ETH,5.31763788,$15822.73,approved / Exchange USD Coin to Ether,$0.00,2022-03-23 22:26:32
+    # Change crypto to fiat for withdrawal from your Nexo account, e.g. GBPX -> GBP
+    sub exchange_to_withdraw_transaction {
+	# Transaction,  Type,              IC  ,IA,            OC, IO,  USD Equivalent,Details,Outstanding Loan,Date / Time
+	# NXTUFwNJD4czO,ExchangeToWithdraw,GBPX,-3395.00000000,GBP,3395,$4695.285,approved / GBPX to GBP,$0.00,2021-04-04 15:26:39
 	my ($input_currency,$input_amount,$output_currency,$output_amount) = @_;
 	my ($sent_amount,$sent_currency,$received_amount,$received_currency);
-	$sent_amount = $input_amount; # it's garabage as of 2022-04-04T19:56:12-07:00, need to hand edit sent amount
-	$sent_amount = ' ? ';
-	$sent_currency = $input_currency; # jumbled up, e.g. 'USDC/ETH'
-	$sent_currency =~ s/\/\w+//; # fix the jumbled value, e.g. 'USDC/ETH' => 'USDC'
-	$received_amount = $output_amount; # OK data from Nexo 2022-04-04
-	$received_currency = $output_currency; # OK data from Nexo 2022-04-04
+	$sent_amount = abs($input_amount);
+	$sent_currency = $input_currency;
+	$received_amount = $output_amount;
+	$received_currency = $output_currency;
 	return ($sent_amount,$sent_currency,$received_amount,$received_currency);
     }
 
-    sub get_sent_value_from_exchanges_file {
-	my ($nexo_transaction_id, $input_amount) = @_;
-	foreach my $transaction (@exchange_transactions) {
-	    $transaction =~ s/\,//g;
-	    if ($transaction =~ /$nexo_transaction_id/) {
-		# $transaction =~ /exchanged\s+([+-]?([0-9]+\.?[0-9]*|\.[0-9]+))/;
-		if ($transaction =~ /Sent\s+(\d+\.?\d+)\s+/) {
-		    $input_amount = $1;
-		    return $input_amount;
-		} else {
-		    return $input_amount;
-		}
-	    }
-	}
-    }    
+    # Withdrawal from your Nexo account to bank
+    sub withdraw_exchanged {
+	# | Date                      | IA   | IC  | OA       | OC   |
+	# | 2021-04-04 15:26:39+01:00 | 3395 | GBP | -3395.00 | GBP  |
+
+	my ($input_currency,$input_amount,$output_currency,$output_amount) = @_;
+	my $sent_amount = $input_amount;
+	my $sent_currency = $input_currency;
+	my $received_amount = '';
+	my $received_currency = '';
+	return ($sent_amount,$sent_currency,$received_amount,$received_currency);
+    }
+
+    # Deposit fiat into your Nexo account
+    sub deposit_to_exchange_transaction {
+	my ($input_currency,$input_amount,$output_currency,$output_amount) = @_;
+
+	my $sent_amount = '';
+	my $sent_currency = '';
+	my $received_amount = $input_amount;
+	my $received_currency = $input_currency;
+	return ($sent_amount,$sent_currency,$received_amount,$received_currency);
+    }
+
+    # Fiat to crypto, e.g. exchange 12.00 GBP to 12.00 GBPX
+    sub exchange_deposited_on_transaction {
+	my ($input_currency,$input_amount,$output_currency,$output_amount) = @_;
+
+      #                                   ic  ia          oc   oa
+      # NXTp7eAtAvp9Q,ExchangeDepositedOn,GBP,12.00000000,GBPX,12,$16.487928,approved / GBP to GBPX,$0.00,2021-04-12 18:01:34
+
+	my $sent_amount = $input_amount;
+	my $sent_currency = $input_currency;
+	my $received_amount = $output_amount;
+	my $received_currency = $output_currency;
+	return ($sent_amount,$sent_currency,$received_amount,$received_currency);
+    }
 
     sub date_with_timezone {
 	my $nexo_date = shift;
@@ -162,7 +157,17 @@
     sub get_description {
 	my ($type, $details, $nexo_transaction_id) = @_;
 	my $tx_hash = '';
-	# approved / 
+	my $die_message = "Quiting program because Details field not in expected format with leading and trailing quotation marks";
+
+	unless ( $details =~ s/^(\")// ) { # Remove the leading quotation mark
+	    die $die_message;
+	}
+
+	unless ($details =~ s/(\")$//) { # Remove the trailing quotation mark
+	    die $die_message;
+	}
+
+	# approved
 	my $description = $details;
 	$description =~ s/(^approved \/ )//;
 	if ($1 ne 'approved / ') {
@@ -180,3 +185,43 @@
 	return ($description,$tx_hash);
     }
   #+end_src
+
+* Nexo Transactions
+  | Top Up Crypto       |
+  | Withdrawal Crypto   |
+  | Repayment           |
+  | Interest            |
+  | Sell Order          |
+  | Additional Interest |
+  | Loan Withdrawal     |
+  | Accounting          |
+  | Interest Discount   |
+  | Dividend            |
+  | Top Up Fiat         |
+  | Exchange Withdrawal |
+  | Withdrawal Fiat     |
+  | ICO Deposit         |
+  | Cashback            |
+  | Exchange            |
+  | Internal Transfer   |
+  | Internal Transfer   |
+* Nexo Transactions sorted
+  | Accounting          |
+  | Additional Interest |
+  | Cashback            |
+  | Dividend            |
+  | Exchange            |
+  | Exchange Withdrawal |
+  | ICO Deposit         |
+  | Interest            |
+  | Interest Discount   |
+  | Internal Transfer   |
+  | Internal Transfer   |
+  | Loan Withdrawal     |
+  | Repayment           |
+  | Sell Order          |
+  | Top Up Crypto       |
+  | Top Up Fiat         |
+  | Withdrawal Crypto   |
+  | Withdrawal Fiat     |
+
