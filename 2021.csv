@@ -1,0 +1,15 @@
+Date,Sent Amount,Sent Currency,Received Amount,Received Currency,Label,TxHash,Description,NexoID,Type
+2021-07-02 00:07:31+01:00,,,1000.00000000,USDC,,0xd40bcb5f3e4c037b0963283755ede2781f6163d53f7c8feaaa2d7c3b16d0da34,,NXTw7WglX2jk4,Deposit
+2021-07-03 01:00:03+01:00,,,0.21087440,USDC,Loan Interest,,USDC Interest Earned,NXTSEdyScomeR,Interest
+2021-07-04 01:00:03+01:00,,,0.21091886,USDC,Loan Interest,,USDC Interest Earned,NXTFCMPcTbjsD,Interest
+2021-07-05 01:00:04+01:00,,,0.21096334,USDC,Loan Interest,,USDC Interest Earned,NXT2mi2uyyIdZ,Interest
+2021-07-06 01:00:03+01:00,,,0.21100783,USDC,Loan Interest,,USDC Interest Earned,NXTREVCG91FW9,Interest
+2021-07-07 01:00:03+01:00,,,0.21105232,USDC,Loan Interest,,USDC Interest Earned,NXTECd7wbTgDi,Interest
+2021-07-08 01:00:03+01:00,,,0.21109683,USDC,Loan Interest,,USDC Interest Earned,NXT05gpotjSTg,Interest
+2021-07-08 13:48:00+01:00,1001.265913,USDC,,,,,USDC withdrawal,NXTx6NVd4srBD,Withdrawal
+2021-12-25 02:25:10+01:00,,,6475.00000000,USDC,,0xeed5006d135cecb4850590cf7bfd165be66426bd4550e6f607c8eb292e94f4fc,,NXTssdsJiwHZr,Deposit
+2021-12-25 02:37:07+01:00,?,USDC,66.1671548,LUNA,,,Exchange USD Coin to Terra,NXTHUrreJt413,Exchange
+2021-12-26 07:00:04+01:00,,,0.00711031,LUNA,Loan Interest,,LUNA Interest Earned,NXTeOfsp02DtZ,Interest
+2021-12-26 22:28:33+01:00,,,15281.00000000,USDC,,0x9a4f042349ffff24a405940b2e44047810dd151925517ac9259770026d28bdc5,,NXTCRMYiq5jJj,Deposit
+2021-12-26 22:35:52+01:00,?,USDC,152.87774482,LUNA,,,Exchange USD Coin to Terra,NXTbs9tsY5pSx,Exchange
+2021-12-27 07:00:05+01:00,,,0.00711107,LUNA,Loan Interest,,LUNA Interest Earned,NXToGTdyLANcV,Interest

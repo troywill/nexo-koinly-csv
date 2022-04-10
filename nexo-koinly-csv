@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
-# version 0.13
-# updated 2022-04-08T17:23:24-07:00
+# version 0.14
+# updated 2022-04-10T15:32:15-07:00
 # works with Nexo CSV exports after 2022-04-07
 use v5.30.0;
 
@@ -138,9 +138,13 @@ sub exchange_deposited_on_transaction {
     return ($sent_amount,$sent_currency,$received_amount,$received_currency);
 }
 
+# Add '+2' to the end of Nexo datetime string to make it GMT time;
 sub date_with_timezone {
+    # Did a ADA transaction on 2022-04-09 23:55:36Z (GMT time)
+    # Nexo reported a transaction time 2 hours ahead"
     my $nexo_date = shift;
-    return $nexo_date . '+01:00'
+    # return $nexo_date . '+02:00'
+    return $nexo_date . '+2' # better to use '+02:00', but 2 is better for hand editing and Koinly will properly use it.
 }
 
 sub get_description {
